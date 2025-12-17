@@ -1,7 +1,7 @@
 [project]
 name = "lifejournal-v2"
 version = "0.1.0"
-description = "Add your description here"
+description = "Life Journal V2 - Backend for the Life Journal V2 project"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
