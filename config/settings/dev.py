@@ -1,8 +1,5 @@
 from .base import *
 
-
-env.read_env(BASE_DIR / ".env")  # dev only
-
 DEBUG = True
 
 SECRET_KEY = env(
