@@ -12,6 +12,10 @@ BASE_DIR = Path(__file__).resolve().parents[3]
 env = environ.Env(
     DEBUG=(bool, False),
 )
+
+# Read .env file if it exists (before any env variable access)
+env.read_env(BASE_DIR / ".env")
+
 # -------------------------------------------------------------------
 # Core
 # -------------------------------------------------------------------
