@@ -1,0 +1,77 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+
+# uv / PEP 582 (if experimented with)
+__pypackages__/
+
+# Virtual environments (uv)
+.venv/
+
+# =========================
+# Django
+# =========================
+*.log
+local_settings.py
+db.sqlite3
+staticfiles/
+media/
+*.pot
+
+# =========================
+# Env / secrets
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# IDE / OS
+# =========================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# =========================
+# Testing / coverage
+# =========================
+.pytest_cache/
+.coverage
+htmlcov/
+
+# =========================
+# Ruff / mypy
+# =========================
+.ruff_cache/
+.mypy_cache/
+
+# =========================
+# Celery
+# =========================
+var/celery/
+celerybeat-schedule*
+celerybeat.pid
+
+# =========================
+# Docker
+# =========================
+docker-data/
+docker-compose.override.yml
+compose.override.yml
+
+# =========================
+# Nginx / TLS
+# =========================
+nginx/certs/
+nginx/conf.d/*.local.conf
+
+# Node / frontend (if ever added)
+node_modules/

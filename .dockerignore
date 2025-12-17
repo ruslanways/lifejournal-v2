@@ -1,0 +1,49 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+__pypackages__/
+
+# Virtual env
+.venv/
+
+# Django generated
+staticfiles/
+media/
+*.log
+db.sqlite3
+*.sqlite3
+
+# Celery runtime state
+var/celery/
+
+# Tests / tooling caches
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+
+# Env / secrets
+.env
+.env.*
+
+# Frontend (future-proof)
+node_modules/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Docker noise
+docker-data/
