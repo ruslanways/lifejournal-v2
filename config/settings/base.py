@@ -12,20 +12,11 @@ BASE_DIR = Path(__file__).resolve().parents[3]
 env = environ.Env(
     DEBUG=(bool, False),
 )
-
-env.read_env(BASE_DIR / ".env")  # dev only
-
 # -------------------------------------------------------------------
 # Core
 # -------------------------------------------------------------------
-SECRET_KEY = env("SECRET_KEY", default="dev-insecure-change-me")
-DEBUG = env("DEBUG", default=False)
-
-ALLOWED_HOSTS = env.list(
-    "ALLOWED_HOSTS",
-    default=["localhost", "127.0.0.1"]
-)
-
+DEBUG = env.bool("DEBUG", default=False)
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 # -------------------------------------------------------------------
 # Applications
 # -------------------------------------------------------------------
@@ -36,12 +27,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     # Third-party
     "rest_framework",
     "imagekit",
     "storages",
-
     # Local
     "apps.posts",
 ]
@@ -52,7 +41,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -79,7 +67,6 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
-                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -92,17 +79,16 @@ TEMPLATES = [
 # Database
 # -------------------------------------------------------------------
 DATABASES = {
-    "default": env.db(
-        "DATABASE_URL",
-        default="postgres://app:app@db:5432/app"
-    )
+    "default": env.db("DATABASE_URL", default="postgresql://app:app@db:5432/app")
 }
 
 # -------------------------------------------------------------------
 # Password validation
 # -------------------------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
@@ -121,8 +107,15 @@ USE_TZ = True
 # -------------------------------------------------------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
+# Django 6+ preferred: configure storages explicitly
+STORAGES = {
+    # MEDIA (default): local in dev, overridden to S3 in prod.py
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    # Static: Whitenoise compressed + hashed filenames
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    },
+}
 # -------------------------------------------------------------------
 # Media (uploads)
 # -------------------------------------------------------------------
@@ -146,10 +139,7 @@ REST_FRAMEWORK = {
 # -------------------------------------------------------------------
 # Redis / Celery
 # -------------------------------------------------------------------
-REDIS_URL = env(
-    "REDIS_URL",
-    default="redis://redis:6379/0"
-)
+REDIS_URL = env("REDIS_URL", default="redis://redis:6379/0")
 
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
