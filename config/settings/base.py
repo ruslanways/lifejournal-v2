@@ -162,6 +162,16 @@ ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False  # Redirect to login after verificat
 ACCOUNT_MAX_EMAIL_ADDRESSES = 1  # Only one email per user
 
 # -------------------------------------------------------------------
+# Authentication Backends
+# -------------------------------------------------------------------
+AUTHENTICATION_BACKENDS = [
+    # Default backend: Needed to login by username in Django admin, regardless of allauth
+    "django.contrib.auth.backends.ModelBackend",
+    # allauth specific authentication methods, such as login by email
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+# -------------------------------------------------------------------
 # Redis / Celery
 # -------------------------------------------------------------------
 REDIS_URL = env("REDIS_URL", default="redis://redis:6379/0")
