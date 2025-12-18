@@ -152,10 +152,14 @@ REST_FRAMEWORK = {
 AUTH_USER_MODEL = "users.User"
 SITE_ID = 1
 
-# Django-allauth settings
-ACCOUNT_AUTHENTICATION_METHOD = "username_email"  # Allow both email and username
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = True  # Allow both email and username
+# Django-allauth settings (modern configuration for v65+)
+# Login methods: allow both email and username
+ACCOUNT_LOGIN_METHODS = {'email', 'username'}
+
+# Signup fields: email*, username* are required (asterisk = required)
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
+
+# Email verification and constraints
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False  # Redirect to login after verification

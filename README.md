@@ -110,9 +110,8 @@ Both methods work:
 **Key Settings** (`config/settings/base.py`):
 ```python
 AUTH_USER_MODEL = "users.User"                      # Custom user model
-ACCOUNT_AUTHENTICATION_METHOD = "username_email"    # Allow both
-ACCOUNT_EMAIL_REQUIRED = True                       # Email is required
-ACCOUNT_USERNAME_REQUIRED = True                    # Username is required
+ACCOUNT_LOGIN_METHODS = {'email', 'username'}       # Allow login with both
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']  # Required fields (* = required)
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"            # Must verify email
 ACCOUNT_UNIQUE_EMAIL = True                         # One email per user
 ACCOUNT_MAX_EMAIL_ADDRESSES = 1                     # Limit to one email
