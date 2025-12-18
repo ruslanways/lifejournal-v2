@@ -154,17 +154,16 @@ SITE_ID = 1
 
 # Django-allauth settings (modern configuration for v65+)
 # Login methods: allow both email and username
-ACCOUNT_LOGIN_METHODS = {'email', 'username'}
+ACCOUNT_LOGIN_METHODS = {"email", "username"}
 
 # Signup fields: email*, username* are required (asterisk = required)
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
+ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
 
 # Email verification and constraints
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False  # Redirect to login after verification
-ACCOUNT_MAX_EMAIL_ADDRESSES = 1  # Only one email per user
-
+ACCOUNT_CHANGE_EMAIL = True # Allow users to change their email address
 # -------------------------------------------------------------------
 # Authentication Backends
 # -------------------------------------------------------------------
