@@ -31,12 +31,17 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",  # Required by allauth
     # Third-party
     "rest_framework",
     "imagekit",
     "storages",
+    # Authentication
+    "allauth",
+    "allauth.account",
     # Local
     "apps.posts",
+    "apps.users",
 ]
 
 # -------------------------------------------------------------------
@@ -51,6 +56,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",  # Required by django-allauth
 ]
 
 # -------------------------------------------------------------------
@@ -139,6 +145,21 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
     ],
 }
+
+# -------------------------------------------------------------------
+# Authentication
+# -------------------------------------------------------------------
+AUTH_USER_MODEL = "users.User"
+SITE_ID = 1
+
+# Django-allauth settings
+ACCOUNT_AUTHENTICATION_METHOD = "username_email"  # Allow both email and username
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = True  # Allow both email and username
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False  # Redirect to login after verification
+ACCOUNT_MAX_EMAIL_ADDRESSES = 1  # Only one email per user
 
 # -------------------------------------------------------------------
 # Redis / Celery

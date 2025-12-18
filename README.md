@@ -17,11 +17,118 @@ Instagram-like Django application for sharing posts with images, titles, descrip
 
 ```
 config/          # Settings (base/dev/prod), URLs, ASGI configuration, Celery app
-apps/posts/      # Posts application (the only app)
+apps/
+  ├── users/     # Custom user model with bio, avatar, website fields
+  └── posts/     # Posts application
 compose.dev.yml  # Development stack configuration
 compose.prod.yml # Production stack configuration (no dev-only commands)
 Dockerfile       # Multi-stage build, virtual environment in /opt/venv
 ```
+
+---
+
+## Authentication System
+
+### Overview
+
+The application uses **django-allauth** for authentication, providing:
+- Email-based registration with mandatory verification
+- Login with **both email and username**
+- Password reset via email
+- Email management (add, remove, verify multiple emails)
+- Ready for social authentication (Google, GitHub, etc.)
+
+### Custom User Model
+
+**Model:** `apps.users.User` (extends `AbstractUser`)
+
+**Additional Fields:**
+- `bio` - Text field (max 500 characters)
+- `avatar` - Image field (uploaded to `media/avatars/`)
+- `website` - URL field (max 200 characters)
+
+**Admin Panel:** Enhanced UserAdmin with custom fields visible at `/admin/`
+
+### Authentication URLs
+
+All authentication URLs are under `/accounts/`:
+
+#### User Registration & Login
+- `GET/POST /accounts/signup/` - User registration form
+- `GET/POST /accounts/login/` - Login (accepts username OR email)
+- `POST /accounts/logout/` - Logout
+
+#### Email Verification
+- `GET /accounts/confirm-email/<key>/` - Verify email with key from email
+- `GET/POST /accounts/email/` - Change email address (one email per user)
+
+#### Password Management
+- `GET/POST /accounts/password/change/` - Change password (when logged in)
+- `GET/POST /accounts/password/set/` - Set password (for social accounts)
+- `GET/POST /accounts/password/reset/` - Request password reset via email
+- `GET /accounts/password/reset/done/` - Password reset email sent confirmation
+- `GET/POST /accounts/password/reset/key/<uidb36>-<key>/` - Password reset form
+- `GET /accounts/password/reset/key/done/` - Password successfully reset
+
+#### Other
+- `GET /accounts/inactive/` - Account inactive notice
+
+### Email Verification Flow
+
+1. User submits registration form at `/accounts/signup/`
+2. Account created but **inactive** until email verified
+3. Verification email sent with unique link
+4. User clicks link → account activated
+5. User can now login at `/accounts/login/`
+
+**Development:** Emails appear in Docker container logs (console backend):
+```bash
+docker compose -f compose.dev.yml logs -f web
+```
+
+**Production:** Configure SMTP settings in `config/settings/prod.py`
+
+### Testing Authentication
+
+#### Create Test User
+```bash
+# Via signup form
+Open: http://localhost:8000/accounts/signup/
+
+# Via command line
+docker compose -f compose.dev.yml exec web python manage.py createsuperuser
+```
+
+#### Login Options
+Both methods work:
+- **Email:** `user@example.com` + password
+- **Username:** `username` + password
+
+
+### Settings Configuration
+
+**Key Settings** (`config/settings/base.py`):
+```python
+AUTH_USER_MODEL = "users.User"                      # Custom user model
+ACCOUNT_AUTHENTICATION_METHOD = "username_email"    # Allow both
+ACCOUNT_EMAIL_REQUIRED = True                       # Email is required
+ACCOUNT_USERNAME_REQUIRED = True                    # Username is required
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"            # Must verify email
+ACCOUNT_UNIQUE_EMAIL = True                         # One email per user
+ACCOUNT_MAX_EMAIL_ADDRESSES = 1                     # Limit to one email
+```
+
+### Future Enhancements
+
+**Phase 2:** REST API with JWT tokens
+- Add `dj-rest-auth` for API endpoints
+- JWT authentication for SPAs and mobile apps
+- Token refresh and rotation
+
+**Phase 3:** Two-Factor Authentication
+- TOTP (Google Authenticator, Authy)
+- Email-based 2FA
+- WebAuthn/Security keys
 
 ---
 
@@ -56,7 +163,11 @@ docker compose -f compose.dev.yml up --build
 - **`celery_worker`** — Celery worker for background tasks
 - **`celery_beat`** — Celery beat scheduler for periodic tasks
 
-**Access the application:** http://localhost:8000
+**Access the application:**
+- Main site: http://localhost:8000
+- Django Admin: http://localhost:8000/admin/
+- User Login: http://localhost:8000/accounts/login/
+- User Signup: http://localhost:8000/accounts/signup/
 
 ### 3. Management Commands
 
