@@ -73,5 +73,10 @@ compose.override.yml
 nginx/certs/
 nginx/conf.d/*.local.conf
 
+# =========================
+# Git
+# =========================
+.git-rewrite/
+
 # Node / frontend (if ever added)
 node_modules/
