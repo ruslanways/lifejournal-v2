@@ -49,6 +49,20 @@ The application uses **django-allauth** for authentication, providing:
 
 **Admin Panel:** Enhanced UserAdmin with custom fields visible at `/admin/`
 
+**Inspecting User Model Fields:**
+
+To check all fields on your user model, use the Django shell:
+
+```bash
+uv run python manage.py shell
+```
+
+Then in the shell:
+```python
+>>> from apps.users.models import User
+>>> [f.name for f in User._meta.get_fields()]
+```
+
 ### Authentication URLs
 
 All authentication URLs are under `/accounts/`:
