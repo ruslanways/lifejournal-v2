@@ -40,8 +40,8 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     # Local
-    "apps.posts",
-    "apps.users",
+    "apps.posts.apps.PostsConfig",
+    "apps.users.apps.UsersConfig",
 ]
 
 # -------------------------------------------------------------------
