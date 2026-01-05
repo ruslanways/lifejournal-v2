@@ -35,7 +35,7 @@ COPY --from=builder /opt/venv /opt/venv
 COPY . .
 
 # Runtime directories
-RUN mkdir -p /app/staticfiles /app/var/celery
+RUN mkdir -p /app/staticfiles /app/media /app/var/celery
 
 # Collect static at build time for prod images (Whitenoise)
 ENV DJANGO_SETTINGS_MODULE=config.settings.prod \
