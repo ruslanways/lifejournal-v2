@@ -3,6 +3,11 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+# Customize admin site titles
+admin.site.site_header = "Life Journal administration"
+admin.site.site_title = "Life Journal administration"
+admin.site.index_title = "Life Journal administration"
+
 urlpatterns = [
     path("", include("apps.posts.urls")),
     path("admin/", admin.site.urls),

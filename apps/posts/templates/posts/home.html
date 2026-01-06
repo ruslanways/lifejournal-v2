@@ -11,7 +11,12 @@
         {% if user.is_authenticated %}
             <div class="user-welcome">
                 <p>Hello, <strong>{{ user.username }}</strong>!</p>
-                <a href="{% url 'account_logout' %}" class="btn btn-secondary">Logout</a>
+                <div class="user-actions">
+                    {% if user.is_staff %}
+                        <a href="{% url 'admin:index' %}" class="btn btn-admin">Admin Site</a>
+                    {% endif %}
+                    <a href="{% url 'account_logout' %}" class="btn btn-secondary">Logout</a>
+                </div>
             </div>
         {% else %}
             <div class="auth-actions">
