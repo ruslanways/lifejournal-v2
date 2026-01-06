@@ -19,7 +19,19 @@ Instagram-like Django application for sharing posts with images, titles, descrip
 config/          # Settings (base/dev/prod), URLs, ASGI configuration, Celery app
 apps/
   ├── users/     # Custom user model with bio, avatar, website fields
-  └── posts/     # Posts application
+  └── posts/     # Posts application (views, URLs, templates)
+templates/       # Project-level templates
+  ├── base.html           # Main base template with navigation and footer
+  └── account/            # Allauth template overrides
+      ├── base.html       # Allauth base template wrapper
+      ├── login.html      # Custom login page
+      ├── signup.html     # Custom signup page
+      └── ...             # Other allauth pages (logout, password reset, etc.)
+static/          # Source static files (CSS, JS, images)
+  └── css/
+      └── main.css        # Main stylesheet with modern color scheme
+apps/posts/templates/posts/  # App-specific templates
+  └── home.html          # Home page template
 compose.dev.yml  # Development stack configuration
 compose.prod.yml # Production stack configuration (no dev-only commands)
 Dockerfile       # Multi-stage build, virtual environment in /opt/venv
@@ -62,6 +74,31 @@ Then in the shell:
 >>> from apps.users.models import User
 >>> [f.name for f in User._meta.get_fields()]
 ```
+
+### Custom Allauth Templates
+
+All allauth pages use custom templates that inherit from the project's base template, ensuring consistent styling across the entire application:
+
+**Template Overrides** (`templates/account/`):
+- `base.html` - Wraps allauth content in styled card
+- `login.html` - Custom login page
+- `signup.html` - Custom signup page
+- `logout.html` - Logout confirmation
+- `password_reset.html` - Password reset request
+- `password_reset_done.html` - Reset email sent confirmation
+- `password_reset_from_key.html` - Set new password form
+- `password_reset_from_key_done.html` - Password changed confirmation
+- `password_change.html` - Change password (when logged in)
+- `email.html` - Email management
+- `email_confirm.html` - Email confirmation
+- `verified_email_required.html` - Email verification required
+- `account_inactive.html` - Inactive account notice
+- And other allauth pages
+
+All templates extend `templates/account/base.html`, which extends `templates/base.html`, ensuring:
+- Consistent navigation and footer
+- Unified color scheme and styling
+- Responsive design across all pages
 
 ### Authentication URLs
 
@@ -177,7 +214,7 @@ docker compose -f compose.dev.yml up --build
 - **`celery_beat`** — Celery beat scheduler for periodic tasks
 
 **Access the application:**
-- Main site: http://localhost:8000
+- Home page: http://localhost:8000/
 - Django Admin: http://localhost:8000/admin/
 - User Login: http://localhost:8000/accounts/login/
 - User Signup: http://localhost:8000/accounts/signup/
@@ -315,11 +352,124 @@ docker compose -f compose.prod.yml run --rm web python manage.py collectstatic -
 
 ---
 
+## Templates & Styling
+
+### Template Structure
+
+The project uses a hierarchical template structure following Django best practices:
+
+**Project-level templates** (`templates/`):
+- `base.html` - Main base template with navigation, footer, and message display
+- `account/` - Allauth template overrides for consistent styling
+
+**App-level templates** (`apps/posts/templates/posts/`):
+- `home.html` - Home page template
+
+**Template Inheritance:**
+```
+Allauth pages → templates/account/base.html → templates/base.html
+App pages → templates/base.html
+```
+
+### URL Routing
+
+**Main URLs** (`config/urls.py`):
+- `/` - Home page (includes `apps.posts.urls`)
+- `/admin/` - Django admin
+- `/accounts/` - Allauth authentication URLs
+
+**Posts App URLs** (`apps/posts/urls.py`):
+- `/` - Home page view
+
+### Static Files
+
+**Source Files** (`static/`):
+- CSS files in `static/css/`
+- JavaScript files (when added)
+- Images and other assets
+
+**Configuration:**
+- `STATICFILES_DIRS = [BASE_DIR / "static"]` - Source directory
+- `STATIC_ROOT = BASE_DIR / "staticfiles"` - Collected files directory
+- `STATIC_URL = "/static/"` - URL prefix
+
+**Development:**
+- Static files are automatically served by `django.contrib.staticfiles` in DEBUG mode
+- Files are served directly from `static/` directory
+
+**Production:**
+- Run `collectstatic` to copy all static files to `staticfiles/`
+- Files are served by Whitenoise from `staticfiles/` directory
+
+### Media Files
+
+**Configuration:**
+- `MEDIA_ROOT = BASE_DIR / "media"` - Local storage directory
+- `MEDIA_URL = "/media/"` - URL prefix
+- User avatars are uploaded to `media/avatars/`
+
+**Automatic Directory Creation:**
+- Media directories are automatically created on Django startup via `apps.users.apps.UsersConfig.ready()`
+- Ensures `media/` and `media/avatars/` exist before file uploads
+
+**Development:**
+- Media files are served by Django's static file serving (when `DEBUG=True`)
+- Files are stored locally in `media/` directory
+
+**Production:**
+- Media files are stored in S3 when `AWS_STORAGE_BUCKET_NAME` is configured
+- Configured in `config/settings/prod.py`
+
+### Styling
+
+**Color Scheme:**
+The application uses a modern, clean color palette:
+- **Primary:** Indigo (`#6366F1`) for buttons and links
+- **Text:** Dark gray (`#1F2937`) for primary text, medium gray (`#6B7280`) for secondary
+- **Backgrounds:** White and light gray (`#F9FAFB`)
+- **Borders:** Neutral gray (`#E5E7EB`)
+- **Shadows:** Modern layered shadows for depth
+
+**CSS Variables:**
+All colors are defined as CSS variables in `static/css/main.css` for easy customization.
+
+**Responsive Design:**
+- Mobile-friendly navigation
+- Responsive forms and cards
+- Breakpoints at 768px for tablet/mobile
+
+---
+
 ## Technical Notes
 
 ### Why `/opt/venv`?
 
 The Python virtual environment is installed into `/opt/venv` (not `/app/.venv`) so that development bind mounts (`.:/app`) never hide the installed dependencies. This prevents the common "No module named django" error when mounting the local directory into the container.
+
+### Template Resolution Order
+
+Django searches for templates in this order:
+1. `TEMPLATES['DIRS']` - Project-level templates (`templates/`)
+2. Each app's `templates/` directory (e.g., `apps/posts/templates/`)
+
+This allows you to:
+- Override third-party templates (like allauth) in project-level `templates/`
+- Keep app-specific templates within each app
+- Maintain a clean separation of concerns
+
+### Static Files vs Media Files
+
+**Static Files:**
+- Files that are part of your codebase (CSS, JS, images bundled with code)
+- Collected by `collectstatic` into `staticfiles/`
+- Served by Whitenoise in production
+- Source files in `static/` directory
+
+**Media Files:**
+- User-uploaded content (avatars, post images, etc.)
+- Stored in `media/` directory (dev) or S3 (prod)
+- Not collected by `collectstatic`
+- Served separately via Django or S3
 
 ### Celery Beat Schedule Files
 

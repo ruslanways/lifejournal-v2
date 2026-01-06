@@ -117,6 +117,7 @@ USE_TZ = True
 # -------------------------------------------------------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 # Django 6+ preferred: configure storages explicitly
 STORAGES = {
     # MEDIA (default): local in dev, overridden to S3 in prod.py
