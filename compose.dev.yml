@@ -11,7 +11,7 @@ services:
       - .:/app
     ports:
       - "8000:8000"
-    command: >
+    command: >+
       sh -c "mkdir -p /app/media &&
              python manage.py migrate &&
              python manage.py collectstatic --noinput &&
@@ -39,7 +39,9 @@ services:
         condition: service_healthy
     volumes:
       - .:/app
-    command: celery -A config.celery_app beat -l info
+    command: >
+      sh -c "mkdir -p /app/var/celery &&
+             celery -A config.celery_app beat -l info"
 
   db:
     image: postgres:16
@@ -49,6 +51,8 @@ services:
       POSTGRES_PASSWORD: app
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432" # Expose port 5433 externally (5432 internally) to avoid conflict with local PostgreSQL
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U app -d app -h 127.0.0.1 -p 5432" ]
       interval: 2s

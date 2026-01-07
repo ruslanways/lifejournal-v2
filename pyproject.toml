@@ -3,7 +3,7 @@ name = "lifejournal-v2"
 version = "0.1.0"
 description = "Life Journal V2 - Backend for the Life Journal V2 project"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "boto3>=1.42.11",
     "celery>=5.6.0",
@@ -19,3 +19,58 @@ dependencies = [
     "uvicorn[standard]>=0.38.0",
     "whitenoise>=6.11.0",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-django>=4.8.0",
+    "pytest-factoryboy>=2.8.0",
+    "pytest-cov>=4.1.0",
+    "pytest-xdist>=3.5.0",
+]
+
+[tool.pytest.ini_options]
+# Include apps/ for app-specific tests
+# Global fixtures from tests/conftest.py are loaded via apps/conftest.py
+# To run end-to-end tests in tests/, use: pytest tests/
+testpaths = ["apps"]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = "-ra -q --reuse-db"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]
+norecursedirs = ["var", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]
+cache_dir = "var/tests/pytest_cache"
+
+[tool.coverage.run]
+# What to measure coverage for
+source = ["apps", "config"]
+data_file = "var/tests/.coverage"
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/conftest.py",
+    "*/settings/*",
+    "*/manage.py",
+]
+
+[tool.coverage.report]
+# Coverage report settings
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+show_missing = true
+skip_covered = false
+precision = 2
+
+[tool.coverage.html]
+directory = "var/tests/htmlcov"

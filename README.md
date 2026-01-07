@@ -263,6 +263,239 @@ docker compose -f compose.dev.yml up --build
 
 ---
 
+## Testing
+
+### Test Structure
+
+The project uses **pytest** with a well-organized test structure:
+
+```
+apps/
+  └── users/
+      └── tests/              # App-specific unit and integration tests
+          ├── conftest.py    # App-specific fixtures
+          ├── test_*.py      # Test files (login, signup, etc.)
+tests/                       # End-to-end tests and global fixtures
+  └── conftest.py            # Global fixtures shared across all tests
+```
+
+**Test Organization:**
+- **`apps/*/tests/`** - App-specific tests (unit tests, integration tests for specific apps)
+- **`tests/`** - End-to-end tests and tests that don't belong to any specific app
+- **`apps/conftest.py`** - Makes global fixtures from `tests/conftest.py` available to app tests
+- **`tests/conftest.py`** - Global fixtures (user fixtures, client fixtures, email backend, etc.)
+
+### Testing Packages
+
+The project uses the following testing packages (installed via `uv`):
+
+- **`pytest`** (>=8.0.0) - Test framework
+- **`pytest-django`** (>=4.8.0) - Django integration for pytest
+- **`pytest-factoryboy`** (>=2.8.0) - Factory Boy integration for test fixtures
+- **`pytest-cov`** (>=4.1.0) - Coverage reporting
+- **`pytest-xdist`** (>=3.5.0) - Parallel test execution
+
+Install development dependencies:
+```bash
+uv sync --extra dev
+```
+
+### Running Tests
+
+#### Basic Test Execution
+
+```bash
+# Run all tests
+pytest
+
+# Run tests for a specific app
+pytest apps/users
+
+# Run a specific test file
+pytest apps/users/tests/test_login.py
+
+# Run a specific test
+pytest apps/users/tests/test_login.py::TestLogin::test_login_with_username
+
+# Run end-to-end tests
+pytest tests/
+```
+
+#### Test Execution Options
+
+```bash
+# Verbose output
+pytest -v
+
+# Show print statements
+pytest -s
+
+# Stop on first failure
+pytest -x
+
+# Run only failed tests from last run
+pytest --lf
+
+# Run tests matching a pattern
+pytest -k "login"
+
+# Run tests in parallel (faster)
+pytest -n auto
+
+# Run tests with markers
+pytest -m "not slow"        # Exclude slow tests
+pytest -m integration        # Run only integration tests
+```
+
+#### Test Configuration
+
+Test configuration is in `pyproject.toml`:
+- **Test paths:** `apps/` (app-specific tests)
+- **Settings:** Uses `config.settings.test`
+- **Database:** Reuses database between runs (`--reuse-db`) for faster execution
+- **Cache:** Stored in `var/tests/pytest_cache/`
+
+### Coverage Reporting
+
+#### Basic Coverage
+
+```bash
+# Terminal report with missing lines
+pytest --cov=apps --cov=config --cov-report=term-missing
+
+# HTML report (opens in browser)
+pytest --cov=apps --cov=config --cov-report=html
+# Then open: var/tests/htmlcov/index.html
+
+# Terminal report only
+pytest --cov=apps --cov=config --cov-report=term
+```
+
+#### Coverage Options
+
+```bash
+# Coverage for specific app
+pytest apps/users --cov=apps.users --cov-report=term-missing
+
+# Coverage with parallel execution
+pytest --cov=apps --cov=config --cov-report=term-missing -n auto
+
+# Coverage with minimum threshold (fails if below 80%)
+pytest --cov=apps --cov=config --cov-report=term-missing --cov-fail-under=80
+
+# Combine multiple report formats
+pytest --cov=apps --cov=config --cov-report=term-missing --cov-report=html
+```
+
+#### Coverage Configuration
+
+Coverage settings are configured in `pyproject.toml`:
+- **Source:** Measures coverage for `apps/` and `config/`
+- **Excludes:** Migrations, test files, settings, conftest files
+- **Output:** Coverage data stored in `var/tests/.coverage`
+- **HTML reports:** Generated in `var/tests/htmlcov/`
+
+### Test Fixtures
+
+#### Global Fixtures (`tests/conftest.py`)
+
+Available to all tests:
+- **`client`** - Django test client
+- **`admin_client`** - Authenticated client as admin user
+- **`authenticated_client`** - Authenticated client as regular user
+- **`user`** - Standard test user
+- **`verified_user`** - User with verified email
+- **`unverified_user`** - User with unverified email
+- **`mailoutbox`** - Access sent emails in tests
+- **`email_backend`** (autouse) - Uses locmem backend for tests
+- **`site`** (autouse) - Ensures Site exists (required by allauth)
+
+#### App-Specific Fixtures (`apps/*/tests/conftest.py`)
+
+App-specific fixtures can be defined in each app's `tests/conftest.py` file.
+
+### Example Test
+
+```python
+# apps/users/tests/test_login.py
+import pytest
+
+def test_login_with_username(client, verified_user):
+    """Test login with username."""
+    response = client.post(
+        "/accounts/login/",
+        {"login": verified_user.username, "password": "testpass123"},
+    )
+    assert response.status_code == 302  # Redirect after login
+    assert response.url == "/"
+```
+
+### Writing Tests
+
+#### Test File Naming
+
+Tests are discovered by pytest using these patterns:
+- `test_*.py` - Files starting with `test_`
+- `*_tests.py` - Files ending with `_tests.py`
+- `tests.py` - Files named `tests.py`
+
+#### Test Organization
+
+- **Unit tests** - Test individual functions/methods
+- **Integration tests** - Test interactions between components
+- **End-to-end tests** - Test complete user workflows (in `tests/`)
+
+#### Using Markers
+
+Mark tests with markers for selective execution:
+
+```python
+import pytest
+
+@pytest.mark.slow
+def test_slow_operation():
+    """This test takes a long time."""
+    pass
+
+@pytest.mark.integration
+def test_api_integration():
+    """Integration test."""
+    pass
+```
+
+Run only non-slow tests:
+```bash
+pytest -m "not slow"
+```
+
+### Test Database
+
+- Tests use a separate test database (configured in `config/settings/test.py`)
+- Database is reused between runs (`--reuse-db`) for faster execution
+- To force database recreation: `pytest --create-db`
+
+### Troubleshooting Tests
+
+#### Fixtures Not Found
+
+If you see `fixture 'user' not found`:
+- Ensure `apps/conftest.py` exists and imports from `tests.conftest`
+- Check that `tests/conftest.py` contains the fixture definitions
+
+#### Import Errors
+
+If tests can't import modules:
+- Ensure you're running tests from the project root
+- Check that `DJANGO_SETTINGS_MODULE` is set correctly (handled by pytest-django)
+
+#### Database Issues
+
+If you encounter database-related errors:
+- Try recreating the test database: `pytest --create-db`
+- Check that PostgreSQL is running (if using external database)
+
+---
+
 ## Production
 
 ### Overview

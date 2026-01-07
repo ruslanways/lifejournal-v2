@@ -56,7 +56,7 @@ htmlcov/
 # =========================
 # Celery
 # =========================
-var/celery/
+var/
 celerybeat-schedule*
 celerybeat.pid
 
