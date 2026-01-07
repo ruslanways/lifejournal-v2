@@ -11,6 +11,8 @@ services:
       - .:/app
     ports:
       - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.dev
     command: >+
       sh -c "mkdir -p /app/media &&
              python manage.py migrate &&
@@ -27,6 +29,8 @@ services:
         condition: service_healthy
     volumes:
       - .:/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.dev
     command: celery -A config.celery_app worker -l info
 
   celery_beat:
@@ -39,6 +43,8 @@ services:
         condition: service_healthy
     volumes:
       - .:/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.dev
     command: >
       sh -c "mkdir -p /app/var/celery &&
              celery -A config.celery_app beat -l info"
