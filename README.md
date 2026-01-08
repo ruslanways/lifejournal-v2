@@ -32,9 +32,9 @@ static/          # Source static files (CSS, JS, images)
       └── main.css        # Main stylesheet with modern color scheme
 apps/posts/templates/posts/  # App-specific templates
   └── home.html          # Home page template
-compose.dev.yml  # Development stack configuration
-compose.prod.yml # Production stack configuration (no dev-only commands)
-Dockerfile       # Multi-stage build, virtual environment in /opt/venv
+compose.dev.yml  # Development stack configuration (uses dev target)
+compose.prod.yml # Production stack configuration (uses prod target)
+Dockerfile       # Multi-stage build with dev/prod targets, virtual environment in /opt/venv
 ```
 
 ---
@@ -207,11 +207,13 @@ docker compose -f compose.dev.yml up --build
 ```
 
 **What this starts:**
-- **`web`** — Runs `migrate`, `collectstatic`, then starts Uvicorn with `--reload`
+- **`web`** — Development container with dev dependencies (pytest, etc.), runs `migrate`, `collectstatic`, then starts Uvicorn with `--reload`
 - **`db`** — PostgreSQL 16 with healthcheck
 - **`redis`** — Redis with healthcheck
-- **`celery_worker`** — Celery worker for background tasks
-- **`celery_beat`** — Celery beat scheduler for periodic tasks
+- **`celery_worker`** — Celery worker for background tasks (with dev dependencies)
+- **`celery_beat`** — Celery beat scheduler for periodic tasks (with dev dependencies)
+
+**Note:** The development containers use the `dev` target from the Dockerfile, which includes all development dependencies (pytest, pytest-django, etc.) for running tests inside the container.
 
 **Access the application:**
 - Home page: http://localhost:8000/
@@ -302,7 +304,7 @@ uv sync --extra dev
 
 ### Running Tests
 
-#### Basic Test Execution
+#### Running Tests Locally
 
 ```bash
 # Run all tests
@@ -320,6 +322,29 @@ pytest apps/users/tests/test_login.py::TestLogin::test_login_with_username
 # Run end-to-end tests
 pytest tests/
 ```
+
+#### Running Tests in Docker Container
+
+Tests can also be run inside the development container, which ensures a consistent environment:
+
+```bash
+# Run all tests in the container
+docker compose -f compose.dev.yml exec web pytest
+
+# Run tests for a specific app
+docker compose -f compose.dev.yml exec web pytest apps/users
+
+# Run a specific test file
+docker compose -f compose.dev.yml exec web pytest apps/users/tests/test_login.py
+
+# Run with verbose output
+docker compose -f compose.dev.yml exec web pytest -v
+
+# Run with coverage
+docker compose -f compose.dev.yml exec web pytest --cov=apps --cov=config --cov-report=term-missing
+```
+
+**Note:** The development container includes all test dependencies (pytest, pytest-django, etc.) via the `dev` Dockerfile target. Tests automatically use `config.settings.test` via the `--ds=config.settings.test` flag in `pyproject.toml`, ensuring consistent test configuration regardless of environment variables.
 
 #### Test Execution Options
 
@@ -351,9 +376,11 @@ pytest -m integration        # Run only integration tests
 
 Test configuration is in `pyproject.toml`:
 - **Test paths:** `apps/` (app-specific tests)
-- **Settings:** Uses `config.settings.test`
+- **Settings:** Uses `config.settings.test` (enforced via `--ds=config.settings.test` flag to override environment variables)
 - **Database:** Reuses database between runs (`--reuse-db`) for faster execution
 - **Cache:** Stored in `var/tests/pytest_cache/`
+
+**Important:** The `--ds=config.settings.test` flag ensures that pytest always uses test settings, even when `DJANGO_SETTINGS_MODULE` is set to a different value (e.g., in Docker containers). This guarantees consistent test behavior across local and containerized environments.
 
 ### Coverage Reporting
 
@@ -504,6 +531,7 @@ If you encounter database-related errors:
 - No development bind mounts
 - No `--reload` flag
 - Does **not** run migrations or collectstatic on startup
+- Uses the `prod` Dockerfile target (excludes dev dependencies for smaller images)
 
 **Recommended deployment approach:** Deploy on EC2 with RDS for PostgreSQL, use GitHub Actions for CI/CD, and store secrets in AWS Secrets Manager or use IAM roles.
 
@@ -546,10 +574,12 @@ docker compose -f compose.prod.yml up -d --build
 ```
 
 **Production services:**
-- **`web`** — Uvicorn ASGI server with 2 workers, exposed internally on port 8000
-- **`celery_worker`** — Celery worker for background task processing
-- **`celery_beat`** — Celery beat for scheduled task execution
+- **`web`** — Production container (no dev dependencies), Uvicorn ASGI server with 2 workers, exposed internally on port 8000
+- **`celery_worker`** — Production container, Celery worker for background task processing
+- **`celery_beat`** — Production container, Celery beat for scheduled task execution
 - **`redis`** — Redis cache and Celery message broker
+
+**Note:** Production containers use the `prod` target from the Dockerfile, which excludes development dependencies (pytest, etc.) to create smaller, more secure production images.
 
 ### 3. Run Database Migrations
 
@@ -674,6 +704,25 @@ All colors are defined as CSS variables in `static/css/main.css` for easy custom
 ---
 
 ## Technical Notes
+
+### Dockerfile Multi-Stage Build
+
+The Dockerfile uses a multi-stage build with separate targets for development and production:
+
+- **`builder`** — Base stage that installs production dependencies
+- **`builder-dev`** — Extends `builder` to include development dependencies (pytest, etc.)
+- **`prod`** — Production runtime stage (excludes dev dependencies, collects static files)
+- **`dev`** — Development runtime stage (includes dev dependencies, no static collection)
+
+**Benefits:**
+- Smaller production images (no dev dependencies)
+- Development containers have all tools needed for testing
+- Clear separation between dev and prod environments
+- Both environments share the same base dependencies
+
+The compose files specify which target to use:
+- `compose.dev.yml` uses `target: dev` for all services
+- `compose.prod.yml` uses `target: prod` for all services
 
 ### Why `/opt/venv`?
 
