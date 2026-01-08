@@ -4,13 +4,11 @@ Global test fixtures and utilities shared across all apps.
 This conftest is located in tests/ to keep global fixtures organized alongside
 end-to-end tests and tests that don't belong to any specific app.
 """
+
 import pytest
-from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
 from django.test import Client
 from django.core import mail
-
-User = get_user_model()
 
 
 @pytest.fixture(autouse=True)
@@ -106,4 +104,3 @@ def unverified_user(django_user_model, db):
 def mailoutbox():
     """Access sent emails in tests."""
     return mail.outbox
-
