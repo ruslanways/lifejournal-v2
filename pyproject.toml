@@ -36,7 +36,8 @@ dev = [
 testpaths = ["apps"]
 DJANGO_SETTINGS_MODULE = "config.settings.test"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
-addopts = "-ra -q --reuse-db"
+# Use --ds flag to explicitly override environment variable DJANGO_SETTINGS_MODULE
+addopts = "-ra -q --reuse-db --ds=config.settings.test"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",

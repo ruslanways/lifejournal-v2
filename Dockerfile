@@ -21,8 +21,13 @@ ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 
+# Dev builder stage - includes dev dependencies
+FROM builder AS builder-dev
+RUN uv sync --frozen --extra dev
 
-FROM python:3.12-slim AS runtime
+# Production runtime stage - used by compose.prod.yml
+# This stage excludes dev dependencies and collects static files at build time
+FROM python:3.12-slim AS prod
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -48,3 +53,25 @@ RUN python manage.py collectstatic --noinput
 EXPOSE 8000
 
 CMD ["uvicorn", "config.asgi:application", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+
+# Development runtime stage - used by compose.dev.yml
+# This stage includes dev dependencies (pytest, etc.) for testing and development
+FROM python:3.12-slim AS dev
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:${PATH}" \
+    PYTHONPATH="/app"
+
+WORKDIR /app
+
+# Copy venv from dev builder (includes dev dependencies)
+COPY --from=builder-dev /opt/venv /opt/venv
+COPY . .
+
+# Runtime directories
+RUN mkdir -p /app/staticfiles /app/media /app/var/celery
+
+EXPOSE 8000
+
+# No static collection in dev - handled by command in compose
