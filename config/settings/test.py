@@ -17,9 +17,8 @@ else:
     # Outside Docker - use localhost on port 5433 (Docker port mapping)
     default_test_db = "postgresql://app:app@localhost:5433/app"
 
-test_db_url = env("TEST_DATABASE_URL", default=default_test_db)
 DATABASES = {
-    "default": env.db("TEST_DATABASE_URL", default=test_db_url)
+    "default": env.db("TEST_DATABASE_URL", default=default_test_db)
 }
 
 # Django will automatically create a test database with '_test' suffix
