@@ -12,12 +12,6 @@ from django.core import mail
 
 
 @pytest.fixture(autouse=True)
-def email_backend(settings):
-    """Override email backend to use locmem for tests."""
-    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
-
-
-@pytest.fixture(autouse=True)
 def site(db):
     """Ensure Site exists (required by allauth)."""
     site, _ = Site.objects.get_or_create(

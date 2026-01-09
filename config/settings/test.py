@@ -43,6 +43,9 @@ CACHES = {
     }
 }
 
+# Use in-memory email backend for tests
+EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
 # Redirect after login (allauth default is /accounts/profile/ which doesn't exist)
 LOGIN_REDIRECT_URL = "/"
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"  # Ensure email verification is mandatory for tests
