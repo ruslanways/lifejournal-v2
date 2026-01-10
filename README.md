@@ -274,28 +274,51 @@ The project uses **pytest** with a well-organized test structure:
 ```
 apps/
   └── users/
-      └── tests/              # App-specific unit and integration tests
-          ├── conftest.py    # App-specific fixtures
-          ├── test_*.py      # Test files (login, signup, etc.)
-tests/                       # End-to-end tests and global fixtures
-  └── conftest.py            # Global fixtures shared across all tests
+      └── tests/                      # App-specific unit and integration tests
+          ├── conftest.py            # Registers factories with pytest-factoryboy
+          ├── test_login.py          # Login functionality tests
+          ├── test_signup.py         # User registration tests
+          ├── test_logout.py         # Logout functionality tests
+          ├── test_email_verification.py  # Email verification flow tests
+          ├── test_password_reset.py      # Password reset flow tests
+          └── test_protected_pages.py     # Protected page access tests
+apps/
+  └── conftest.py                    # Makes global fixtures available to app tests
+tests/                               # End-to-end tests and global fixtures
+  └── conftest.py                    # Global fixtures (authenticated_client, verified_user, etc.)
+apps/users/
+  └── factories.py                   # Factory Boy factories (UserFactory, EmailAddressFactory)
 ```
 
 **Test Organization:**
-- **`apps/*/tests/`** - App-specific tests (unit tests, integration tests for specific apps)
-- **`tests/`** - End-to-end tests and tests that don't belong to any specific app
-- **`apps/conftest.py`** - Makes global fixtures from `tests/conftest.py` available to app tests
-- **`tests/conftest.py`** - Global fixtures (user fixtures, client fixtures, email backend, etc.)
+- **`apps/users/tests/`** - User app tests (authentication, registration, email verification, password reset, etc.)
+- **`tests/`** - End-to-end tests and tests that don't belong to any specific app (currently used for global fixtures)
+- **`apps/conftest.py`** - Makes global fixtures from `tests/conftest.py` available to app tests via `pytest_plugins`
+- **`tests/conftest.py`** - Global fixtures (`authenticated_client`, `verified_user`, `unverified_user`, `site`)
+- **`apps/users/tests/conftest.py`** - Registers factories with pytest-factoryboy, making them available as fixtures
+- **`apps/users/factories.py`** - Factory Boy factories for creating test data (`UserFactory`, `EmailAddressFactory`)
+
+**Current Test Coverage:**
+- **Authentication:** Login (username and email), logout, signup
+- **Email Verification:** Verification flow, unverified user handling, expired keys
+- **Password Reset:** Reset request, email sending, password change
+- **Protected Pages:** Login required behavior, authentication redirects
 
 ### Testing Packages
 
 The project uses the following testing packages (installed via `uv`):
 
 - **`pytest`** (>=8.0.0) - Test framework
-- **`pytest-django`** (>=4.8.0) - Django integration for pytest
-- **`pytest-factoryboy`** (>=2.8.0) - Factory Boy integration for test fixtures
+- **`pytest-django`** (>=4.8.0) - Django integration for pytest (provides `client`, `django_user_model`, `mailoutbox` fixtures)
+- **`pytest-factoryboy`** (>=2.8.0) - Factory Boy integration for test fixtures (auto-creates fixtures from registered factories)
 - **`pytest-cov`** (>=4.1.0) - Coverage reporting
 - **`pytest-xdist`** (>=3.5.0) - Parallel test execution
+- **`factory-boy`** (via pytest-factoryboy) - Test data generation with factories
+
+**Factory Boy Integration:**
+- Factories are registered in `apps/users/tests/conftest.py` using `register()`
+- Registered factories automatically create fixtures with the factory name (e.g., `UserFactory` → `user` and `user_factory`)
+- Use factories directly in tests or via auto-generated fixtures
 
 Install development dependencies:
 ```bash
@@ -380,6 +403,14 @@ Test configuration is in `pyproject.toml`:
 - **Database:** Reuses database between runs (`--reuse-db`) for faster execution
 - **Cache:** Stored in `var/tests/pytest_cache/`
 
+**Test Settings** (`config/settings/test.py`):
+- **Email Backend:** `locmem.EmailBackend` (in-memory, emails available via `mailoutbox` fixture)
+- **Password Hashing:** `MD5PasswordHasher` (faster for tests)
+- **Cache:** `DummyCache` (no caching in tests)
+- **Database:** PostgreSQL (auto-detects Docker vs localhost connection)
+- **Email Verification:** `ACCOUNT_EMAIL_VERIFICATION = "mandatory"` (enforced in tests)
+- **Login Redirect:** `LOGIN_REDIRECT_URL = "/"` (redirects to home after login)
+
 **Important:** The `--ds=config.settings.test` flag ensures that pytest always uses test settings, even when `DJANGO_SETTINGS_MODULE` is set to a different value (e.g., in Docker containers). This guarantees consistent test behavior across local and containerized environments.
 
 ### Coverage Reporting
@@ -427,35 +458,73 @@ Coverage settings are configured in `pyproject.toml`:
 #### Global Fixtures (`tests/conftest.py`)
 
 Available to all tests:
-- **`client`** - Django test client
-- **`admin_client`** - Authenticated client as admin user
-- **`authenticated_client`** - Authenticated client as regular user
-- **`user`** - Standard test user
-- **`verified_user`** - User with verified email
-- **`unverified_user`** - User with unverified email
-- **`mailoutbox`** - Access sent emails in tests
-- **`email_backend`** (autouse) - Uses locmem backend for tests
+- **`client`** - Django test client (provided automatically by pytest-django)
+- **`authenticated_client`** - Authenticated client as regular user (uses `user` fixture)
+- **`verified_user`** - User with verified email (created via `user_factory` and `email_address_factory`)
+- **`unverified_user`** - User with unverified email (created via `user_factory` and `email_address_factory`)
+- **`mailoutbox`** - Access sent emails in tests (provided by pytest-django when using locmem email backend)
 - **`site`** (autouse) - Ensures Site exists (required by allauth)
+
+#### Factory-Based Fixtures (`apps/users/tests/conftest.py`)
+
+The following fixtures are automatically created by pytest-factoryboy from registered factories:
+- **`user`** - Standard test user (from `UserFactory`, creates: `User` with username, email, password, etc.)
+- **`user_factory`** - Factory for creating custom User instances
+- **`email_address`** - EmailAddress instance (from `EmailAddressFactory`)
+- **`email_address_factory`** - Factory for creating custom EmailAddress instances
+
+**Factories** (`apps/users/factories.py`):
+- **`UserFactory`** - Creates `User` instances with:
+  - Sequential usernames: `user0`, `user1`, etc.
+  - Sequential emails: `user0@example.com`, `user1@example.com`, etc.
+  - Default password: `testpass123` (stored in `DEFAULT_TEST_PASSWORD`)
+  - Faker-generated first_name, last_name, bio
+  - Default: `is_active=True`, `is_staff=False`, `is_superuser=False`
+- **`EmailAddressFactory`** - Creates `EmailAddress` instances with:
+  - Links to User via SubFactory
+  - Email matches user's email by default
+  - Default: `verified=False`, `primary=True`
 
 #### App-Specific Fixtures (`apps/*/tests/conftest.py`)
 
-App-specific fixtures can be defined in each app's `tests/conftest.py` file.
+App-specific fixtures can be defined in each app's `tests/conftest.py` file. The `apps/users/tests/conftest.py` registers factories for use in tests.
 
 ### Example Test
 
 ```python
 # apps/users/tests/test_login.py
 import pytest
+from django.urls import reverse
 
-def test_login_with_username(client, verified_user):
-    """Test login with username."""
-    response = client.post(
-        "/accounts/login/",
-        {"login": verified_user.username, "password": "testpass123"},
-    )
-    assert response.status_code == 302  # Redirect after login
-    assert response.url == "/"
+from apps.users.factories import DEFAULT_TEST_PASSWORD
+
+@pytest.mark.django_db
+class TestLogin:
+    """Test user login flow."""
+
+    def test_login_with_username(self, client, verified_user):
+        """Test that login works with username."""
+        url = reverse("account_login")
+        data = {
+            "login": verified_user.username,
+            "password": DEFAULT_TEST_PASSWORD,
+        }
+
+        response = client.post(url, data, follow=True)
+        # Should redirect after successful login
+        assert response.status_code == 200
+        # Check user is authenticated
+        if response.context:
+            assert response.context["user"].is_authenticated
+            assert response.context["user"] == verified_user
 ```
+
+**Key Testing Patterns:**
+- Use `@pytest.mark.django_db` decorator for tests that need database access
+- Use `reverse()` to get URLs by name (more maintainable than hardcoded paths)
+- Use `DEFAULT_TEST_PASSWORD` from factories for consistent test passwords
+- Use `follow=True` in `client.post()` to follow redirects and check final page
+- Access `mailoutbox` fixture to verify emails were sent in tests
 
 ### Writing Tests
 
@@ -506,7 +575,11 @@ pytest -m "not slow"
 #### Fixtures Not Found
 
 If you see `fixture 'user' not found`:
-- Ensure `apps/conftest.py` exists and imports from `tests.conftest`
+- Ensure `apps/users/tests/conftest.py` exists and registers `UserFactory` using `register(UserFactory)`
+- The `user` fixture is auto-generated by pytest-factoryboy from the registered factory
+
+If you see `fixture 'authenticated_client' not found` or other global fixtures:
+- Ensure `apps/conftest.py` exists and imports from `tests.conftest` via `pytest_plugins = ["tests.conftest"]`
 - Check that `tests/conftest.py` contains the fixture definitions
 
 #### Import Errors
