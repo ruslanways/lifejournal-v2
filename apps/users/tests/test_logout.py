@@ -9,7 +9,7 @@ from django.urls import reverse
 class TestLogout:
     """Test user logout flow."""
 
-    def test_logout_redirects_correctly(self, authenticated_client, verified_user):
+    def test_logout_redirects_correctly(self, authenticated_client):
         """Test that logout redirects to the correct page."""
         url = reverse("account_logout")
         response = authenticated_client.post(url, follow=True)
@@ -19,7 +19,7 @@ class TestLogout:
         # User should no longer be authenticated
         assert not response.context["user"].is_authenticated
 
-    def test_logout_clears_session(self, authenticated_client, verified_user):
+    def test_logout_clears_session(self, authenticated_client):
         """Test that logout clears user session."""
         # Verify user is logged in by checking session
         assert authenticated_client.session.get("_auth_user_id") is not None
@@ -31,7 +31,7 @@ class TestLogout:
         # Verify user is logged out - session should be cleared
         assert authenticated_client.session.get("_auth_user_id") is None
 
-    def test_logout_prevents_access_to_protected_pages(self, authenticated_client, verified_user):
+    def test_logout_prevents_access_to_protected_pages(self, authenticated_client):
         """Test that user cannot access protected pages after logout."""
         # First, verify we can access a protected page while logged in
         # (We'll use a simple check - if we had a protected view, we'd test it)
