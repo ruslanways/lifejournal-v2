@@ -3,7 +3,6 @@ Tests for password reset functionality.
 """
 import pytest
 from django.urls import reverse
-from django.core import mail
 
 from apps.users.factories import DEFAULT_TEST_PASSWORD
 

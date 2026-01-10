@@ -52,6 +52,27 @@ class TestLogout:
         assert response.status_code == 200
         # User should still be authenticated until POST
         assert response.context["user"].is_authenticated
+        # Should contain confirmation message
+        assert "sign out" in response.content.decode().lower()
+
+    def test_logout_full_flow_get_then_post(self, authenticated_client):
+        """Test the complete logout flow: GET shows confirmation, POST logs out."""
+        logout_url = reverse("account_logout")
+        
+        # Step 1: GET request should show confirmation page
+        get_response = authenticated_client.get(logout_url)
+        assert get_response.status_code == 200
+        assert get_response.context["user"].is_authenticated
+        assert "sign out" in get_response.content.decode().lower()
+        # Verify session is still active before POST
+        assert authenticated_client.session.get("_auth_user_id") is not None
+        
+        # Step 2: POST request from confirmation page should actually logout
+        post_response = authenticated_client.post(logout_url, follow=True)
+        assert post_response.status_code == 200
+        assert not post_response.context["user"].is_authenticated
+        # Verify session is cleared after POST
+        assert authenticated_client.session.get("_auth_user_id") is None
 
     def test_logout_requires_authentication(self, client):
         """Test that logout requires user to be authenticated."""
