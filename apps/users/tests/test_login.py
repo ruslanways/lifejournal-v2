@@ -4,6 +4,8 @@ Tests for user login functionality.
 import pytest
 from django.urls import reverse
 
+from apps.users.factories import DEFAULT_TEST_PASSWORD
+
 
 @pytest.mark.django_db
 class TestLogin:
@@ -14,7 +16,7 @@ class TestLogin:
         url = reverse("account_login")
         data = {
             "login": verified_user.username,
-            "password": "testpass123",
+            "password": DEFAULT_TEST_PASSWORD,
         }
 
         response = client.post(url, data, follow=True)
@@ -33,7 +35,7 @@ class TestLogin:
         url = reverse("account_login")
         data = {
             "login": verified_user.email,
-            "password": "testpass123",
+            "password": DEFAULT_TEST_PASSWORD,
         }
 
         response = client.post(url, data, follow=True)
@@ -82,7 +84,7 @@ class TestLogin:
         inactive_user = django_user_model.objects.create_user(
             username="inactive",
             email="inactive@example.com",
-            password="testpass123",
+            password=DEFAULT_TEST_PASSWORD,
             is_active=False,
         )
         EmailAddress.objects.create(
@@ -95,7 +97,7 @@ class TestLogin:
         url = reverse("account_login")
         data = {
             "login": inactive_user.username,
-            "password": "testpass123",
+            "password": DEFAULT_TEST_PASSWORD,
         }
 
         response = client.post(url, data)
@@ -110,7 +112,7 @@ class TestLogin:
         login_value = getattr(verified_user, login_field)
         data = {
             "login": login_value,
-            "password": "testpass123",
+            "password": DEFAULT_TEST_PASSWORD,
         }
 
         response = client.post(url, data, follow=True)

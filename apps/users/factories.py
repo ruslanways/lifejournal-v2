@@ -7,6 +7,9 @@ from allauth.account.models import EmailAddress
 
 User = get_user_model()
 
+# Default test password used in factories and tests
+DEFAULT_TEST_PASSWORD = "testpass123"
+
 
 class UserFactory(factory.django.DjangoModelFactory):
     """Factory for creating User instances."""
@@ -17,7 +20,7 @@ class UserFactory(factory.django.DjangoModelFactory):
 
     username = factory.Sequence(lambda n: f"user{n}")
     email = factory.Sequence(lambda n: f"user{n}@example.com")
-    password = factory.django.Password("testpass123")
+    password = factory.django.Password(DEFAULT_TEST_PASSWORD)
     first_name = factory.Faker("first_name")
     last_name = factory.Faker("last_name")
     bio = factory.Faker("text", max_nb_chars=500)

@@ -5,6 +5,8 @@ import pytest
 from django.urls import reverse
 from django.core import mail
 
+from apps.users.factories import DEFAULT_TEST_PASSWORD
+
 
 @pytest.mark.django_db
 class TestPasswordReset:
@@ -88,7 +90,7 @@ class TestPasswordReset:
         # 4. Verify old password doesn't work
         # 5. Verify new password works
 
-        old_password = "testpass123"
+        old_password = DEFAULT_TEST_PASSWORD
         new_password = "NewSecurePass123!"
 
         # Verify old password works
@@ -107,7 +109,7 @@ class TestPasswordReset:
 
     def test_old_password_no_longer_works_after_reset(self, client, verified_user, authenticated_client):
         """Test that old password no longer works after reset."""
-        old_password = "testpass123"
+        old_password = DEFAULT_TEST_PASSWORD
         new_password = "NewSecurePass123!"
 
         # Verify we can login with old password (authenticated_client is already logged in)

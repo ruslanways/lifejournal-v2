@@ -7,6 +7,8 @@ from django.urls import reverse
 from django.utils import timezone
 from allauth.account.models import EmailAddress, EmailConfirmation
 
+from apps.users.factories import DEFAULT_TEST_PASSWORD
+
 
 @pytest.mark.django_db
 class TestEmailVerification:
@@ -63,7 +65,7 @@ class TestEmailVerification:
         url = reverse("account_login")
         data = {
             "login": verified_user.username,
-            "password": "testpass123",
+            "password": DEFAULT_TEST_PASSWORD,
         }
 
         response = client.post(url, data, follow=True)
@@ -76,7 +78,7 @@ class TestEmailVerification:
         url = reverse("account_login")
         data = {
             "login": unverified_user.username,
-            "password": "testpass123",
+            "password": DEFAULT_TEST_PASSWORD,
         }
 
         response = client.post(url, data, follow=False)

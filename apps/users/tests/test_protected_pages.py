@@ -4,6 +4,8 @@ Tests for protected pages that require authentication.
 import pytest
 from django.urls import reverse
 
+from apps.users.factories import DEFAULT_TEST_PASSWORD
+
 
 @pytest.mark.django_db
 class TestProtectedPages:
@@ -99,7 +101,7 @@ class TestProtectedPages:
         # After login, should redirect to the original page
         response = client.post(
             login_url + f"?next={protected_path}",
-            {"login": verified_user.username, "password": "testpass123"},
+            {"login": verified_user.username, "password": DEFAULT_TEST_PASSWORD},
             follow=True,
         )
         # Should be authenticated - check session
