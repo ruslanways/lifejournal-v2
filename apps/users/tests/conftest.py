@@ -1,7 +1,6 @@
 """
 App-specific fixtures for users app tests.
 """
-import pytest
 from pytest_factoryboy import register
 
 from apps.users.factories import EmailAddressFactory, UserFactory
