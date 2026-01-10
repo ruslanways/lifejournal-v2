@@ -2,18 +2,15 @@
 Tests for user signup functionality.
 """
 import pytest
-from django.contrib.auth import get_user_model
 from django.urls import reverse
 from allauth.account.models import EmailAddress
-
-User = get_user_model()
 
 
 @pytest.mark.django_db
 class TestSignup:
     """Test user signup flow."""
 
-    def test_signup_creates_user(self, client):
+    def test_signup_creates_user(self, client, django_user_model):
         """Test that valid signup creates a new user."""
         url = reverse("account_signup")
         data = {
@@ -28,8 +25,8 @@ class TestSignup:
         assert response.status_code in [200, 302]
 
         # Check user was created
-        assert User.objects.filter(username="newuser").exists()
-        user = User.objects.get(username="newuser")
+        assert django_user_model.objects.filter(username="newuser").exists()
+        user = django_user_model.objects.get(username="newuser")
         assert user.email == "newuser@example.com"
         assert user.check_password("SecurePass123!")
 
@@ -64,7 +61,7 @@ class TestSignup:
         assert response.status_code == 200
         assert "username" in response.context["form"].errors or "already exists" in str(response.content).lower()
 
-    def test_signup_rejects_duplicate_email(self, client, user):
+    def test_signup_rejects_duplicate_email(self, client, user, django_user_model):
         """Test that signup rejects duplicate email."""
         url = reverse("account_signup")
         data = {
@@ -81,9 +78,7 @@ class TestSignup:
             # If redirecting, it might be allowing signup (which shouldn't happen with ACCOUNT_UNIQUE_EMAIL=True)
             # But in some allauth configs, it redirects to confirm-email
             # For now, just verify it doesn't create a duplicate user
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            users_with_email = User.objects.filter(email=user.email)
+            users_with_email = django_user_model.objects.filter(email=user.email)
             assert users_with_email.count() == 1  # Should still be only one user
         else:
             # Should show form errors
@@ -105,7 +100,7 @@ class TestSignup:
         form = response.context["form"]
         assert not form.is_valid()
 
-    def test_signup_saves_custom_user_fields(self, client):
+    def test_signup_saves_custom_user_fields(self, client, django_user_model):
         """Test that custom user fields are saved correctly."""
         url = reverse("account_signup")
         data = {
@@ -117,13 +112,13 @@ class TestSignup:
 
         client.post(url, data)
 
-        user = User.objects.get(username="customuser")
+        user = django_user_model.objects.get(username="customuser")
         # Check custom fields exist (even if empty)
         assert hasattr(user, "bio")
         assert hasattr(user, "avatar")
         assert hasattr(user, "website")
 
-    def test_signup_creates_email_address(self, client):
+    def test_signup_creates_email_address(self, client, django_user_model):
         """Test that signup creates EmailAddress record."""
         url = reverse("account_signup")
         data = {
@@ -135,7 +130,7 @@ class TestSignup:
 
         client.post(url, data)
 
-        user = User.objects.get(username="emailuser")
+        user = django_user_model.objects.get(username="emailuser")
         assert EmailAddress.objects.filter(user=user, email=user.email).exists()
         email_address = EmailAddress.objects.get(user=user, email=user.email)
         assert email_address.primary is True

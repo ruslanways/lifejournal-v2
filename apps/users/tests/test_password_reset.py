@@ -2,11 +2,8 @@
 Tests for password reset functionality.
 """
 import pytest
-from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.core import mail
-
-User = get_user_model()
 
 
 @pytest.mark.django_db

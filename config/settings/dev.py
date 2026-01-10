@@ -7,6 +7,8 @@ SECRET_KEY = env(
     default="dev-insecure-change-me"
 )
 
+INSTALLED_APPS += ["django_extensions"]
+
 TEMPLATES[0]["OPTIONS"]["context_processors"].insert(
     0, "django.template.context_processors.debug"
 )
