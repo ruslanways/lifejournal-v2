@@ -1,0 +1,140 @@
+"""
+Tests for user login functionality.
+"""
+import pytest
+from django.urls import reverse
+
+from apps.users.factories import DEFAULT_TEST_PASSWORD
+
+
+@pytest.mark.django_db
+class TestLogin:
+    """Test user login flow."""
+
+    def test_login_with_username(self, client, verified_user):
+        """Test that login works with username."""
+        url = reverse("account_login")
+        data = {
+            "login": verified_user.username,
+            "password": DEFAULT_TEST_PASSWORD,
+        }
+
+        response = client.post(url, data, follow=True)
+        # Should redirect after successful login
+        assert response.status_code == 200
+        # Check user is authenticated if context exists
+        if response.context:
+            assert response.context["user"].is_authenticated
+            assert response.context["user"] == verified_user
+        else:
+            # Verify login worked by checking session
+            assert client.session.get("_auth_user_id") == str(verified_user.pk)
+
+    def test_login_with_email(self, client, verified_user):
+        """Test that login works with email."""
+        url = reverse("account_login")
+        data = {
+            "login": verified_user.email,
+            "password": DEFAULT_TEST_PASSWORD,
+        }
+
+        response = client.post(url, data, follow=True)
+        # Should redirect after successful login
+        assert response.status_code == 200
+        # Check user is authenticated if context exists
+        if response.context:
+            assert response.context["user"].is_authenticated
+            assert response.context["user"] == verified_user
+        else:
+            # Verify login worked by checking session
+            assert client.session.get("_auth_user_id") == str(verified_user.pk)
+
+    def test_login_rejects_invalid_credentials(self, client, verified_user):
+        """Test that login rejects invalid credentials."""
+        url = reverse("account_login")
+        data = {
+            "login": verified_user.username,
+            "password": "wrongpassword",
+        }
+
+        response = client.post(url, data)
+        # Should show form errors
+        assert response.status_code == 200
+        form = response.context["form"]
+        assert not form.is_valid() or "credentials" in str(response.content).lower()
+
+    def test_login_rejects_nonexistent_user(self, client):
+        """Test that login rejects nonexistent user."""
+        url = reverse("account_login")
+        data = {
+            "login": "nonexistent",
+            "password": "somepassword",
+        }
+
+        response = client.post(url, data)
+        # Should show form errors
+        assert response.status_code == 200
+        form = response.context["form"]
+        assert not form.is_valid() or "credentials" in str(response.content).lower()
+
+    def test_login_rejects_inactive_user(self, client, django_user_model):
+        """Test that inactive user cannot login."""
+        from allauth.account.models import EmailAddress
+
+        inactive_user = django_user_model.objects.create_user(
+            username="inactive",
+            email="inactive@example.com",
+            password=DEFAULT_TEST_PASSWORD,
+            is_active=False,
+        )
+        EmailAddress.objects.create(
+            user=inactive_user,
+            email=inactive_user.email,
+            verified=True,
+            primary=True,
+        )
+
+        url = reverse("account_login")
+        data = {
+            "login": inactive_user.username,
+            "password": DEFAULT_TEST_PASSWORD,
+        }
+
+        response = client.post(url, data)
+        # Allauth redirects inactive users to /accounts/inactive/
+        assert response.status_code == 302
+        assert response.url == "/accounts/inactive/" or response.url.endswith("/accounts/inactive/")
+
+    def test_login_rejects_unverified_user(self, client, unverified_user):
+        """Test that unverified user cannot login if email verification is mandatory."""
+        url = reverse("account_login")
+        data = {
+            "login": unverified_user.username,
+            "password": DEFAULT_TEST_PASSWORD,
+        }
+
+        response = client.post(url, data, follow=False)
+        # Allauth redirects unverified users to email confirmation page
+        assert response.status_code == 302
+        assert "/accounts/confirm-email/" in response.url or "/confirm-email/" in response.url
+
+    @pytest.mark.parametrize("login_field", ["username", "email"])
+    def test_login_with_different_fields(self, client, verified_user, login_field):
+        """Test login works with both username and email fields."""
+        url = reverse("account_login")
+        login_value = getattr(verified_user, login_field)
+        data = {
+            "login": login_value,
+            "password": DEFAULT_TEST_PASSWORD,
+        }
+
+        response = client.post(url, data, follow=True)
+        assert response.status_code == 200
+        # Check user is authenticated if context exists
+        if response.context:
+            assert response.context["user"].is_authenticated
+            assert response.context["user"] == verified_user
+        else:
+            # Verify login worked by checking session
+            assert client.session.get("_auth_user_id") == str(verified_user.pk)
+

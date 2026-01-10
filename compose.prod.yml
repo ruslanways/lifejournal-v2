@@ -1,6 +1,8 @@
 services:
   web:
-    build: .
+    build:
+      context: .
+      target: prod
     env_file: .env
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
@@ -18,7 +20,9 @@ services:
       --workers 2
 
   celery_worker:
-    build: .
+    build:
+      context: .
+      target: prod
     env_file: .env
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
@@ -30,7 +34,9 @@ services:
     command: celery -A config.celery_app worker -l info
 
   celery_beat:
-    build: .
+    build:
+      context: .
+      target: prod
     env_file: .env
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod

@@ -4,7 +4,7 @@ import environ
 # -------------------------------------------------------------------
 # Paths
 # -------------------------------------------------------------------
-BASE_DIR = Path(__file__).resolve().parents[3]
+BASE_DIR = Path(__file__).resolve().parents[2]
 
 # -------------------------------------------------------------------
 # Environment
@@ -31,12 +31,17 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",  # Required by allauth
     # Third-party
     "rest_framework",
     "imagekit",
     "storages",
+    # Authentication
+    "allauth",
+    "allauth.account",
     # Local
-    "apps.posts",
+    "apps.posts.apps.PostsConfig",
+    "apps.users.apps.UsersConfig",
 ]
 
 # -------------------------------------------------------------------
@@ -51,6 +56,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",  # Required by django-allauth
 ]
 
 # -------------------------------------------------------------------
@@ -111,6 +117,7 @@ USE_TZ = True
 # -------------------------------------------------------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 # Django 6+ preferred: configure storages explicitly
 STORAGES = {
     # MEDIA (default): local in dev, overridden to S3 in prod.py
@@ -139,6 +146,34 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
     ],
 }
+
+# -------------------------------------------------------------------
+# Authentication
+# -------------------------------------------------------------------
+AUTH_USER_MODEL = "users.User"
+SITE_ID = 1
+
+# Django-allauth settings (modern configuration for v65+)
+# Login methods: allow both email and username
+ACCOUNT_LOGIN_METHODS = {"email", "username"}
+
+# Signup fields: email*, username* are required (asterisk = required)
+ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
+
+# Email verification and constraints
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False  # Redirect to login after verification
+ACCOUNT_CHANGE_EMAIL = True # Allow users to change their email address
+# -------------------------------------------------------------------
+# Authentication Backends
+# -------------------------------------------------------------------
+AUTHENTICATION_BACKENDS = [
+    # Default backend: Needed to login by username in Django admin, regardless of allauth
+    "django.contrib.auth.backends.ModelBackend",
+    # allauth specific authentication methods, such as login by email
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
 
 # -------------------------------------------------------------------
 # Redis / Celery

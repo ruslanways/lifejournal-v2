@@ -1,6 +1,8 @@
 services:
   web:
-    build: .
+    build:
+      context: .
+      target: dev
     env_file: .env
     depends_on:
       db:
@@ -11,13 +13,18 @@ services:
       - .:/app
     ports:
       - "8000:8000"
-    command: >
-      sh -c "python manage.py migrate &&
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.dev
+    command: >+
+      sh -c "mkdir -p /app/media &&
+             python manage.py migrate &&
              python manage.py collectstatic --noinput &&
              uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --reload"
-
+             
   celery_worker:
-    build: .
+    build:
+      context: .
+      target: dev
     env_file: .env
     depends_on:
       db:
@@ -26,10 +33,14 @@ services:
         condition: service_healthy
     volumes:
       - .:/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.dev
     command: celery -A config.celery_app worker -l info
 
   celery_beat:
-    build: .
+    build:
+      context: .
+      target: dev
     env_file: .env
     depends_on:
       db:
@@ -38,7 +49,11 @@ services:
         condition: service_healthy
     volumes:
       - .:/app
-    command: celery -A config.celery_app beat -l info
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.dev
+    command: >
+      sh -c "mkdir -p /app/var/celery &&
+             celery -A config.celery_app beat -l info"
 
   db:
     image: postgres:16
@@ -48,19 +63,24 @@ services:
       POSTGRES_PASSWORD: app
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432" # Expose port 5433 externally (5432 internally) to avoid conflict with local PostgreSQL
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U app -d app -h 127.0.0.1 -p 5432"]
+      test: [ "CMD-SHELL", "pg_isready -U app -d app -h 127.0.0.1 -p 5432" ]
       interval: 2s
       timeout: 3s
       retries: 30
 
   redis:
     image: redis:7-alpine
+    volumes:
+      - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 2s
       timeout: 3s
       retries: 30
 
 volumes:
   postgres_data:
+  redis_data:
