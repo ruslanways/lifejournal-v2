@@ -105,6 +105,19 @@ class TestLogin:
         assert response.status_code == 302
         assert response.url == "/accounts/inactive/" or response.url.endswith("/accounts/inactive/")
 
+    def test_login_rejects_unverified_user(self, client, unverified_user):
+        """Test that unverified user cannot login if email verification is mandatory."""
+        url = reverse("account_login")
+        data = {
+            "login": unverified_user.username,
+            "password": DEFAULT_TEST_PASSWORD,
+        }
+
+        response = client.post(url, data, follow=False)
+        # Allauth redirects unverified users to email confirmation page
+        assert response.status_code == 302
+        assert "/accounts/confirm-email/" in response.url or "/confirm-email/" in response.url
+
     @pytest.mark.parametrize("login_field", ["username", "email"])
     def test_login_with_different_fields(self, client, verified_user, login_field):
         """Test login works with both username and email fields."""
