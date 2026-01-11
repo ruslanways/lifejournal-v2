@@ -43,7 +43,7 @@ class Post(models.Model):
     )
 
     created_at = models.DateTimeField(
-        auto_now_add=True, db_index=True, verbose_name=_("Created At")
+        auto_now_add=True, verbose_name=_("Created At")
     )
 
     updated_at = models.DateTimeField(auto_now=True, verbose_name=_("Updated At"))
