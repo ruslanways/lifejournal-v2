@@ -37,6 +37,7 @@ media/
 # =========================
 .vscode/
 .idea/
+.cursor/
 .DS_Store
 Thumbs.db
 
