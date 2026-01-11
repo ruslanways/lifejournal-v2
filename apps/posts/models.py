@@ -39,7 +39,7 @@ class Post(models.Model):
     )
 
     likes_count = models.PositiveIntegerField(
-        default=0, db_index=True, verbose_name=_("Likes Count")
+        default=0, verbose_name=_("Likes Count")
     )
 
     created_at = models.DateTimeField(
@@ -56,6 +56,7 @@ class Post(models.Model):
         indexes = [
             models.Index(fields=["-created_at"]),
             models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["likes_count"]),
         ]
 
     # ImageKit specs for responsive rendering
